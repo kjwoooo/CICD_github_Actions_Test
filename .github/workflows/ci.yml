@@ -1,3 +1,41 @@
+#name: CI/CD Pipeline
+#
+#on:
+#  push:
+#    branches:
+#      - main
+#
+#jobs:
+#  deploy:
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v2
+#
+#      - name: Set up JDK
+#        uses: actions/setup-java@v2
+#        with:
+#          java-version: '17'
+#          distribution: 'adopt'
+#
+#
+#      - name: Build with Gradle
+#        run: ./gradlew build
+#
+#      - name: Copy JAR file to server
+#        uses: appleboy/scp-action@master
+#        with:
+#          host: 3.35.141.230
+#          username: ubuntu
+#          key: ${{ secrets.KJWSTUDY_2024}}
+#          source: build/libs/cicd_test1-0.0.1-SNAPSHOT.jar
+#          target: /home/ubuntu/cicdTest
+#
+#      - name: Execute application
+#        run: ssh -i ${{ secrets.KJWSTUDY_2024}} ubuntu@3.35.141.230 "java -jar /home/ubuntu/cicdTest/cicd_test1-0.0.1-SNAPSHOT.jar"
+
+
 name: CI/CD Pipeline
 
 on:
@@ -19,9 +57,23 @@ jobs:
           java-version: '17'
           distribution: 'adopt'
 
+      # SSH 키 설정 단계 추가
+      - name: Setup SSH
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.KJWSTUDY_2024 }}
+          known_hosts: unnecessary
+          if_key_exists: replace
+
+      # Known Hosts 설정
+      - name: Add Known Hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H 3.35.141.230 >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
 
       - name: Build with Gradle
-        run: ./gradlew build  
+        run: ./gradlew build
 
       - name: Copy JAR file to server
         uses: appleboy/scp-action@master
@@ -29,8 +81,16 @@ jobs:
           host: 3.35.141.230
           username: ubuntu
           key: ${{ secrets.KJWSTUDY_2024 }}
-          source: build/libs/cicd_test1-0.0.1-SNAPSHOT.jar
-          target: /home/ubuntu/cicdTest
+          source: "build/libs/cicd_test1-0.0.1-SNAPSHOT.jar"
+          target: "/home/ubuntu/cicdTest"
+          strip_components: 2
 
       - name: Execute application
-        run: ssh -i ${{ secrets.KJWSTUDY_2024 }} ubuntu@3.35.141.230 "java -jar /home/ubuntu/cicdTest/cicd_test1-0.0.1-SNAPSHOT.jar"
+        uses: appleboy/ssh-action@master
+        with:
+          host: 3.35.141.230
+          username: ubuntu
+          key: ${{ secrets.KJWSTUDY_2024 }}
+          script: |
+            pkill -f cicd_test1-0.0.1-SNAPSHOT.jar || true
+            nohup java -jar /home/ubuntu/cicdTest/cicd_test1-0.0.1-SNAPSHOT.jar > /home/ubuntu/cicdTest/app.log 2>&1 &
