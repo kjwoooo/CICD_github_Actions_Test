@@ -1,6 +1,5 @@
 package com.example.cicd_test1;
 
-import lombok.Getter;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,7 +15,6 @@ public class CicdTest1Application {
 
 	@GetMapping("/")
 	public String hello() {
-		return "hello, World";
+		return "Hello, World";
 	}
-
 }
