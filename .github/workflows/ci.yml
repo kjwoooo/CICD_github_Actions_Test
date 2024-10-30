@@ -287,7 +287,7 @@ jobs:
           username: ubuntu
           key: ${{ secrets.KJWSTUDY_2024 }}
           source: "build/libs/cicd_test1-0.0.1-SNAPSHOT.jar"
-          target: "/home/ubuntu/cicdTest"
+          target: "/home/ubuntu/cicdTest1"
           strip_components: 2
 
       - name: 애플리케이션 실행
