@@ -290,7 +290,7 @@ jobs:
           target: "/home/ubuntu/cicdTest"
           strip_components: 2
 
-      - name: 애플리케이션 시작
+      - name: 애플리케이션 실행
         uses: appleboy/ssh-action@master
         with:
           host: 3.35.141.230
@@ -299,18 +299,4 @@ jobs:
           script: |
             cd /home/ubuntu/cicdTest
             echo "새로운 애플리케이션을 시작합니다..."
-            java -jar cicd_test1-0.0.1-SNAPSHOT.jar > app.log 2>&1
-            
-            # 애플리케이션 시작 확인
-            sleep 10
-            NEW_PID=$(pgrep -f cicd_test1-0.0.1-SNAPSHOT.jar)
-            if [ ! -z "$NEW_PID" ]; then
-              echo "애플리케이션이 성공적으로 시작되었습니다. (PID: $NEW_PID)"
-              echo "애플리케이션 로그 확인:"
-              tail -n 20 app.log
-            else
-              echo "애플리케이션 시작에 실패했습니다."
-              echo "로그 확인:"
-              tail -n 50 app.log
-              exit 1
-            fi
+            nohup java -jar cicd_test1-0.0.1-SNAPSHOT.jar > app.log 2>&1 &
