@@ -94,5 +94,14 @@ jobs:
           username: ubuntu
           key: ${{ secrets.KJWSTUDY_2024 }}
           script: |
-            pkill -f cicd_test1-0.0.1-SNAPSHOT.jar || true
             java -jar /home/ubuntu/cicdTest/cicd_test1-0.0.1-SNAPSHOT.jar > /home/ubuntu/cicdTest/app.log 2>&1 &
+
+#      - name: Execute application
+#        uses: appleboy/ssh-action@master
+#        with:
+#          host: 3.35.141.230
+#          username: ubuntu
+#          key: ${{ secrets.KJWSTUDY_2024 }}
+#          script: |
+#            pkill -f cicd_test1-0.0.1-SNAPSHOT.jar || true
+#            java -jar /home/ubuntu/cicdTest/cicd_test1-0.0.1-SNAPSHOT.jar > /home/ubuntu/cicdTest/app.log 2>&1 &
