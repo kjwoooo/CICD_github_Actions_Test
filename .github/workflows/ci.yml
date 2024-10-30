@@ -36,6 +36,70 @@
 #        run: ssh -i ${{ secrets.KJWSTUDY_2024}} ubuntu@3.35.141.230 "java -jar /home/ubuntu/cicdTest/cicd_test1-0.0.1-SNAPSHOT.jar"
 
 
+
+#
+#name: CI/CD Pipeline
+#
+#on:
+#  push:
+#    branches:
+#      - main
+#
+#jobs:
+#  deploy:
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v2
+#
+#      - name: Set up JDK
+#        uses: actions/setup-java@v2
+#        with:
+#          java-version: '17'
+#          distribution: 'adopt'
+#
+#      # SSH 키 설정 단계 추가
+#      - name: Setup SSH
+#        uses: shimataro/ssh-key-action@v2
+#        with:
+#          key: ${{ secrets.KJWSTUDY_2024 }}
+#          known_hosts: unnecessary
+#          if_key_exists: replace
+#
+#      # Known Hosts 설정
+#      - name: Add Known Hosts
+#        run: |
+#          mkdir -p ~/.ssh
+#          ssh-keyscan -H 3.35.141.230 >> ~/.ssh/known_hosts
+#          chmod 600 ~/.ssh/known_hosts
+#
+#      - name: Build with Gradle
+#        run: ./gradlew build
+#
+#      - name: Copy JAR file to server
+#        uses: appleboy/scp-action@master
+#        with:
+#          host: 3.35.141.230
+#          username: ubuntu
+#          key: ${{ secrets.KJWSTUDY_2024 }}
+#          source: "build/libs/cicd_test1-0.0.1-SNAPSHOT.jar"
+#          target: "/home/ubuntu/cicdTest"
+#          strip_components: 2
+#
+#      - name: Execute application
+#        uses: appleboy/ssh-action@master
+#        with:
+#          host: 3.35.141.230
+#          username: ubuntu
+#          key: ${{ secrets.KJWSTUDY_2024 }}
+#          script: |
+#            pkill -f cicd_test1-0.0.1-SNAPSHOT.jar || true
+#            nohup java -jar /home/ubuntu/cicdTest/cicd_test1-0.0.1-SNAPSHOT.jar > /home/ubuntu/cicdTest/app.log 2>&1 &
+
+
+
+
 name: CI/CD Pipeline
 
 on:
@@ -48,34 +112,67 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: 코드 체크아웃
         uses: actions/checkout@v2
 
-      - name: Set up JDK
+      - name: JDK 설정
         uses: actions/setup-java@v2
         with:
           java-version: '17'
           distribution: 'adopt'
 
-      # SSH 키 설정 단계 추가
-      - name: Setup SSH
+      - name: Gradle 실행 권한 부여
+        run: chmod +x ./gradlew
+
+      - name: SSH 설정
         uses: shimataro/ssh-key-action@v2
         with:
           key: ${{ secrets.KJWSTUDY_2024 }}
           known_hosts: unnecessary
           if_key_exists: replace
 
-      # Known Hosts 설정
-      - name: Add Known Hosts
+      - name: Known Hosts 설정
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H 3.35.141.230 >> ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
-      - name: Build with Gradle
-        run: ./gradlew build
+      - name: Gradle 빌드
+        run: ./gradlew clean build
 
-      - name: Copy JAR file to server
+      - name: 기존 애플리케이션 종료
+        uses: appleboy/ssh-action@master
+        with:
+          host: 3.35.141.230
+          username: ubuntu
+          key: ${{ secrets.KJWSTUDY_2024 }}
+          script: |
+            # 실행 중인 프로세스 PID 찾기
+            PID=$(pgrep -f cicd_test1-0.0.1-SNAPSHOT.jar) || true
+            if [ ! -z "$PID" ]; then
+              echo "현재 실행 중인 애플리케이션을 종료합니다 (PID: $PID)..."
+              # SIGTERM으로 정상 종료 시도
+              kill -15 $PID || true
+              # 프로세스 종료 대기
+              for i in {1..10}; do
+                if ! ps -p $PID > /dev/null; then
+                  echo "애플리케이션이 정상적으로 종료되었습니다."
+                  break
+                fi
+                echo "애플리케이션 종료 대기 중... ($i/10)"
+                sleep 2
+              done
+              # 여전히 실행 중이라면 강제 종료
+              if ps -p $PID > /dev/null; then
+                echo "애플리케이션을 강제 종료합니다..."
+                kill -9 $PID || true
+                sleep 2
+              fi
+            else
+              echo "실행 중인 애플리케이션이 없습니다."
+            fi
+
+      - name: JAR 파일 서버 전송
         uses: appleboy/scp-action@master
         with:
           host: 3.35.141.230
@@ -85,12 +182,27 @@ jobs:
           target: "/home/ubuntu/cicdTest"
           strip_components: 2
 
-      - name: Execute application
+      - name: 애플리케이션 시작
         uses: appleboy/ssh-action@master
         with:
           host: 3.35.141.230
           username: ubuntu
           key: ${{ secrets.KJWSTUDY_2024 }}
           script: |
-            pkill -f cicd_test1-0.0.1-SNAPSHOT.jar || true
-            nohup java -jar /home/ubuntu/cicdTest/cicd_test1-0.0.1-SNAPSHOT.jar > /home/ubuntu/cicdTest/app.log 2>&1 &
+            cd /home/ubuntu/cicdTest
+            echo "새로운 애플리케이션을 시작합니다..."
+            nohup java -jar cicd_test1-0.0.1-SNAPSHOT.jar > app.log 2>&1 &
+            
+            # 애플리케이션 시작 확인
+            sleep 10
+            NEW_PID=$(pgrep -f cicd_test1-0.0.1-SNAPSHOT.jar)
+            if [ ! -z "$NEW_PID" ]; then
+              echo "애플리케이션이 성공적으로 시작되었습니다. (PID: $NEW_PID)"
+              echo "애플리케이션 로그 확인:"
+              tail -n 20 app.log
+            else
+              echo "애플리케이션 시작에 실패했습니다."
+              echo "로그 확인:"
+              tail -n 50 app.log
+              exit 1
+            fi
