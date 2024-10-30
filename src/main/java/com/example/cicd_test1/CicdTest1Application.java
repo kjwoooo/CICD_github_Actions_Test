@@ -15,6 +15,6 @@ public class CicdTest1Application {
 
 	@GetMapping("/")
 	public String hello() {
-		return "Hello, Worldd";
+		return "Hello, 정은서";
 	}
 }
