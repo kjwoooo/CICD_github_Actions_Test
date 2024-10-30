@@ -298,5 +298,5 @@ jobs:
           key: ${{ secrets.KJWSTUDY_2024 }}
           script: |
             cd /home/ubuntu/cicdTest1
-            echo "새로운 애플리케이션을 시작합니다..."
+            echo "새로운 애플리케이션을 시작..."
             nohup java -jar cicd_test1-0.0.1-SNAPSHOT.jar > app.log 2>&1 &
