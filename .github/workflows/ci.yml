@@ -58,8 +58,6 @@
 #
 
 
-
-
 name: PR 메인 브랜치 테스트
 
 on:
@@ -92,17 +90,21 @@ jobs:
           script: |
             const ref = process.env.GITHUB_REF;
             const pull_number = Number(ref.split("/")[2]);
-            await github.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: pull_number,
-              body: "테스트가 실패했습니다. 코드를 다시 확인해 주세요."
+            const { owner, repo } = context.repo;
+
+            // 주석 남기기
+            await github.pulls.createReview({
+              owner,
+              repo,
+              pull_number,
+              body: "테스트가 실패했습니다. 코드를 다시 확인해 주세요.",
+              event: "COMMENT"
             });
 
             // PR 클로즈
             await github.pulls.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: pull_number,
+              owner,
+              repo,
+              pull_number,
               state: 'closed'  // PR을 클로즈 상태로 변경
             });
