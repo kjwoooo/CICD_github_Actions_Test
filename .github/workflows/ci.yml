@@ -93,20 +93,19 @@ jobs:
       # 테스트 실행
       - name: 테스트 실행
         run: ./gradlew test
-
-      # 테스트 실패 시 주석 남기기
-      - name: 테스트 실패 시 주석 남기기
-        if: failure()  # 이전 단계가 실패한 경우에만 실행
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.KJWSTUDY_2024 }}
-          script: |
-            const ref = process.env.GITHUB_REF;
-            const pull_number = Number(ref.split("/")[2]);
-            await github.pulls.createReview({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: pull_number,
-              body: "테스트가 실패했습니다. 코드를 다시 확인해 주세요.",
-              event: "COMMENT"  // 주석으로 남기기
-            });
+          
+          # 테스트 실패 시 주석 남기기
+               - name: 테스트 실패 시 주석 남기기
+               if: failure()  # 이전 단계가 실패한 경우에만 실행
+               uses: actions/github-script@v6
+               with:
+                 github-token: ${{ secrets.KJWSTUDY_2024 }}  # 올바른 토큰 이름으로 변경
+                 script: |
+                   const ref = process.env.GITHUB_REF;
+                   const pull_number = Number(ref.split("/")[2]);
+                   await github.issues.createComment({
+                     owner: context.repo.owner,
+                     repo: context.repo.repo,
+                     issue_number: pull_number,
+                     body: "테스트가 실패했습니다. 코드를 다시 확인해 주세요."
+                   });
