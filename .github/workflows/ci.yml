@@ -58,7 +58,7 @@
 #
 
 
-name: PR 메인 브랜치 테스트
+name: PR 테스트
 
 on:
   pull_request:
@@ -80,31 +80,26 @@ jobs:
           distribution: 'temurin'
 
       - name: 빌드 및 테스트 실행
-        run: ./gradlew build  # 이 단계에서 테스트도 실행됨
+        id: build
+        run: ./gradlew build
 
-      - name: 테스트 실패 시 주석 남기기
-        if: failure()  # 이전 단계가 실패한 경우에만 실행
-        uses: actions/github-script@v6
-        with:
-          github-token: ${{ secrets.KJWSTUDY_2024 }}  # 올바른 토큰 이름으로 변경
-          script: |
-            const ref = process.env.GITHUB_REF;
-            const pull_number = Number(ref.split("/")[2]);
-            const { owner, repo } = context.repo;
+      - name: PR 닫기 및 코멘트 달기
+        if: failure()  # 빌드가 실패할 경우 실행
+        env:
+          GITHUB_TOKEN: ${{ secrets.KJWSTUDY_2024 }}  # GitHub Token
+        run: |
+          echo "빌드 및 테스트가 실패했습니다. PR을 닫습니다."
+          COMMENT="빌드 및 테스트가 실패했습니다. PR을 닫습니다."
+          PR_URL="${{ github.event.pull_request.url }}"
+          
+          # 코멘트 달기
+          curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
+          -H "Accept: application/vnd.github.v3+json" \
+          "${PR_URL}/comments" \
+          -d "{\"body\": \"$COMMENT\"}"
 
-            // 주석 남기기
-            await github.pulls.createReview({
-              owner,
-              repo,
-              pull_number,
-              body: "테스트가 실패했습니다. 코드를 다시 확인해 주세요.",
-              event: "COMMENT"
-            });
-
-            // PR 클로즈
-            await github.pulls.update({
-              owner,
-              repo,
-              pull_number,
-              state: 'closed'  // PR을 클로즈 상태로 변경
-            });
+          # PR 닫기
+          curl -PATCH -H "Authorization: token $GITHUB_TOKEN" \
+          -H "Accept: application/vnd.github.v3+json" \
+          "${PR_URL}" \
+          -d "{\"state\": \"closed\"}"
