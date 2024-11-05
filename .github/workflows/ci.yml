@@ -141,37 +141,36 @@ jobs:
 
       - name: 빌드 및 테스트 실행
         id: build
-        run: ./gradlew build
         continue-on-error: true
+        run: |
+          if ./gradlew build; then
+            echo "BUILD_STATUS=success" >> $GITHUB_ENV
+          else
+            echo "BUILD_STATUS=failure" >> $GITHUB_ENV
+          fi
 
-      - name: PR 실패 시 코멘트 및 종료
-        if: steps.build.outcome == 'failure'
-        uses: actions/github-script@v6
+      - name: PR 실패 시 코멘트
+        if: env.BUILD_STATUS == 'failure'
+        uses: peter-evans/create-or-update-comment@v3
         with:
-          github-token: ${{ secrets.KJWSTUDY_2024 }}
-          script: |
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: '⚠️ 빌드 또는 테스트가 실패했습니다. 코드를 확인해주세요.'
-            });
-            await github.rest.pulls.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: context.issue.number,
-              state: 'closed'
-            });
+          token: ${{ secrets.KJWSTUDY_2024 }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ⚠️ 빌드 또는 테스트가 실패했습니다. 코드를 확인해주세요.
+
+      - name: PR 실패 시 종료
+        if: env.BUILD_STATUS == 'failure'
+        uses: peter-evans/close-pull@v3
+        with:
+          token: ${{ secrets.KJWSTUDY_2024 }}
+          pull-request-number: ${{ github.event.pull_request.number }}
+          comment: PR이 자동으로 종료되었습니다. 빌드/테스트 실패로 인해 종료됩니다.
 
       - name: PR 성공 시 코멘트
-        if: steps.build.outcome == 'success'
-        uses: actions/github-script@v6
+        if: env.BUILD_STATUS == 'success'
+        uses: peter-evans/create-or-update-comment@v3
         with:
-          github-token: ${{ secrets.KJWSTUDY_2024 }}
-          script: |
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: '✅ 빌드 및 테스트가 성공적으로 완료되었습니다!'
-            });
+          token: ${{ secrets.KJWSTUDY_2024 }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ✅ 빌드 및 테스트가 성공적으로 완료되었습니다!
