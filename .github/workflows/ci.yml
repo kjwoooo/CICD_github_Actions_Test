@@ -105,7 +105,6 @@
 #          -d "{\"state\": \"closed\"}"
 #
 
-
 name: PR 테스트
 
 on:
@@ -153,7 +152,7 @@ jobs:
         if: env.BUILD_STATUS == 'failure'
         uses: peter-evans/create-or-update-comment@v3
         with:
-          token: ${{ secrets.KJWSTUDY_2024 }}
+          token: ${{ secrets.GITHUB_TOKEN }}  # 토큰을 GITHUB_TOKEN으로 변경
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ⚠️ 빌드 또는 테스트가 실패했습니다. 코드를 확인해주세요.
@@ -162,7 +161,7 @@ jobs:
         if: env.BUILD_STATUS == 'failure'
         uses: peter-evans/close-pull@v3
         with:
-          token: ${{ secrets.KJWSTUDY_2024 }}
+          token: ${{ secrets.GITHUB_TOKEN }}  # 토큰을 GITHUB_TOKEN으로 변경
           pull-request-number: ${{ github.event.pull_request.number }}
           comment: PR이 자동으로 종료되었습니다. 빌드/테스트 실패로 인해 종료됩니다.
 
@@ -170,7 +169,7 @@ jobs:
         if: env.BUILD_STATUS == 'success'
         uses: peter-evans/create-or-update-comment@v3
         with:
-          token: ${{ secrets.KJWSTUDY_2024 }}
+          token: ${{ secrets.GITHUB_TOKEN }}  # 토큰을 GITHUB_TOKEN으로 변경
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             ✅ 빌드 및 테스트가 성공적으로 완료되었습니다!
