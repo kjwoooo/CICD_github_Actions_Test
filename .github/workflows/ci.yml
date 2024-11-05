@@ -91,15 +91,16 @@ jobs:
           echo "빌드 및 테스트가 실패했습니다. PR을 닫습니다."
           COMMENT="빌드 및 테스트가 실패했습니다. PR을 닫습니다."
           PR_URL="${{ github.event.pull_request.url }}"
-          
+
           # 코멘트 달기
-          curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
+          curl --http1.1 -X POST -H "Authorization: token $GITHUB_TOKEN" \
           -H "Accept: application/vnd.github.v3+json" \
           "${PR_URL}/comments" \
           -d "{\"body\": \"$COMMENT\"}"
 
           # PR 닫기
-          curl -PATCH -H "Authorization: token $GITHUB_TOKEN" \
+          curl --http1.1 -X PATCH -H "Authorization: token $GITHUB_TOKEN" \
           -H "Accept: application/vnd.github.v3+json" \
           "${PR_URL}" \
           -d "{\"state\": \"closed\"}"
+      
