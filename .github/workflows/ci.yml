@@ -57,7 +57,10 @@
 #             java -jar /home/ubuntu/cicdTest/cicd_test1-0.0.1-SNAPSHOT.jar > /home/ubuntu/cicdTest/app.log 2>&1 &
 #
 
-name: PR Test for Main Branch
+
+
+
+name: PR 메인 브랜치 테스트
 
 on:
   pull_request:
@@ -69,26 +72,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: 코드 체크아웃
         uses: actions/checkout@v3
 
-      - name: Set up JDK
+      - name: JDK 설정
         uses: actions/setup-java@v3
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Build
-        run: ./gradlew build
+      - name: 빌드 및 테스트 실행
+        run: ./gradlew build  # 이 단계에서 테스트도 실행됨
 
-      - name: Run tests
-        run: ./gradlew test
-
-      - name: Comment on failure
-        if: failure()  # Only run if previous step failed
+      - name: 테스트 실패 시 주석 남기기
+        if: failure()  # 이전 단계가 실패한 경우에만 실행
         uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.KJWSTUDY_2024 }}  # Ensure this is correct
+          github-token: ${{ secrets.KJWSTUDY_2024 }}  # 올바른 토큰 이름으로 변경
           script: |
             const ref = process.env.GITHUB_REF;
             const pull_number = Number(ref.split("/")[2]);
@@ -97,4 +97,12 @@ jobs:
               repo: context.repo.repo,
               issue_number: pull_number,
               body: "테스트가 실패했습니다. 코드를 다시 확인해 주세요."
+            });
+
+            // PR 클로즈
+            await github.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pull_number,
+              state: 'closed'  // PR을 클로즈 상태로 변경
             });
