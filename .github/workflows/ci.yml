@@ -128,7 +128,6 @@
 #            ✅ 빌드 및 테스트가 성공적으로 완료되었습니다.
 
 
-
 name: PR 테스트
 
 on:
@@ -137,7 +136,7 @@ on:
       - main
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: 코드 체크아웃
@@ -162,36 +161,37 @@ jobs:
       - name: Gradle 권한 설정
         run: chmod +x ./gradlew
 
-      - name: 테스트 실행
-        id: test
-        continue-on-error: true # 테스트가 실패해도 워크플로우 계속 진행
+      - name: 빌드 실행 (테스트 제외)
+        id: build
+        continue-on-error: true # 빌드가 실패해도 워크플로우 계속 진행
         run: |
-          if ./gradlew test; then
-            echo "TEST_STATUS=success" >> $GITHUB_ENV
+          if ./gradlew build -x test; then
+            echo "BUILD_STATUS=success" >> $GITHUB_ENV
           else
-            echo "TEST_STATUS=failure" >> $GITHUB_ENV
+            echo "BUILD_STATUS=failure" >> $GITHUB_ENV
           fi
 
-      - name: 테스트 실패 시 코멘트
-        if: env.TEST_STATUS == 'failure'
+      - name: 빌드 실패 시 코멘트
+        if: env.BUILD_STATUS == 'failure'
         uses: peter-evans/create-or-update-comment@v3
         with:
-          token: ${{ secrets.MY_GITHUB_TOKEN }}
+          token: ${{ secrets.MY_GITHUB_TOKEN }}  # 토큰 설정
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ❗️테스트가 실패했습니다. 코드를 확인해주세요.
+            ❗️빌드가 실패했습니다. 코드를 확인해주세요.
 
-      - name: 테스트 실패 시 종료
-        if: env.TEST_STATUS == 'failure'
-        uses: peter-evans/close-pull@v3
+      - name: 빌드 성공 시 코멘트
+        if: env.BUILD_STATUS == 'success'
+        uses: peter-evans/create-or-update-comment@v3
         with:
-          token: ${{ secrets.MY_GITHUB_TOKEN }}
-          pull-request-number: ${{ github.event.pull_request.number }}
-          comment: 테스트 실패로 PR이 종료되었습니다.
+          token: ${{ secrets.MY_GITHUB_TOKEN }}  # 토큰 설정
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ✅ 빌드가 성공적으로 완료되었습니다. 이제 테스트를 진행합니다.
 
-  build:
+  test:
     runs-on: ubuntu-latest
-    needs: test # test 단계가 성공해야 실행됨
+    needs: build  # 빌드가 성공해야만 테스트가 실행됨
     steps:
       - name: 코드 체크아웃
         uses: actions/checkout@v3
@@ -215,38 +215,31 @@ jobs:
       - name: Gradle 권한 설정
         run: chmod +x ./gradlew
 
-      - name: 빌드 실행
-        id: build
-        continue-on-error: true # 빌드 실패 시 워크플로우 계속 진행
-        run: |
-          if ./gradlew build; then
-            echo "BUILD_STATUS=success" >> $GITHUB_ENV
-          else
-            echo "BUILD_STATUS=failure" >> $GITHUB_ENV
-          fi
+      - name: 테스트 실행
+        run: ./gradlew test
 
-      - name: 빌드 실패 시 코멘트
-        if: env.BUILD_STATUS == 'failure'
+      - name: 테스트 실패 시 코멘트
+        if: failure()
         uses: peter-evans/create-or-update-comment@v3
         with:
           token: ${{ secrets.MY_GITHUB_TOKEN }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ❗️빌드가 실패했습니다. 코드 또는 환경 설정을 확인해주세요.
+            ❌ 테스트가 실패했습니다. 코드를 확인해주세요.
 
-      - name: 빌드 실패 시 종료
-        if: env.BUILD_STATUS == 'failure'
+      - name: 테스트 성공 시 코멘트
+        if: success()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          token: ${{ secrets.MY_GITHUB_TOKEN }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ✅ 테스트가 성공적으로 완료되었습니다.
+
+      - name: PR 실패 시 종료
+        if: failure()
         uses: peter-evans/close-pull@v3
         with:
           token: ${{ secrets.MY_GITHUB_TOKEN }}
           pull-request-number: ${{ github.event.pull_request.number }}
-          comment: 빌드 실패로 PR이 종료되었습니다.
-
-      - name: PR 성공 시 코멘트
-        if: env.BUILD_STATUS == 'success'
-        uses: peter-evans/create-or-update-comment@v3
-        with:
-          token: ${{ secrets.MY_GITHUB_TOKEN }}
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            ✅ 테스트와 빌드가 성공적으로 완료되었습니다. PR을 검토해 주세요.
+          comment: 빌드 또는 테스트 실패로 PR이 종료되었습니다.
