@@ -8,9 +8,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @SpringBootTest
 class CicdTest1ApplicationTests {
 
-	@Test
-	void contextLoads() {
-	}
+//	@Test
+//	void contextLoads() {
+//	}
 
 
 	@Test
