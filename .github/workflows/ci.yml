@@ -187,7 +187,7 @@ jobs:
           token: ${{ secrets.MY_GITHUB_TOKEN }}  # 토큰 설정
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ✅ 빌드가 성공적으로 완료되었습니다. 이제 테스트를 진행합니다.
+            ✅ 빌드가 성공적으로 완료되었습니다.
 
   test:
     runs-on: ubuntu-latest
