@@ -58,54 +58,6 @@
 #
 #
 #
-#name: PR 테스트
-#
-#on:
-#  pull_request:
-#    branches:
-#      - main
-#
-#jobs:
-#  build-and-test:
-#    runs-on: ubuntu-latest
-#
-#    steps:
-#      - name: 코드 체크아웃
-#        uses: actions/checkout@v3
-#
-#      - name: JDK 설정
-#        uses: actions/setup-java@v3
-#        with:
-#          java-version: '17'
-#          distribution: 'temurin'
-#
-#      - name: 빌드 및 테스트 실행
-#        id: build
-#        run: ./gradlew build
-#
-#      - name: PR 닫기 및 코멘트 달기
-#        if: failure()  # 빌드가 실패할 경우 실행
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.KJWSTUDY_2024 }}  # GitHub Token
-#        run: |
-#          echo "빌드 및 테스트가 실패했습니다. PR을 닫습니다."
-#          COMMENT="빌드 및 테스트가 실패했습니다. PR을 닫습니다."
-#          PR_URL="${{ github.event.pull_request.url }}"
-#
-#          # 코멘트 달기
-#          curl --http1.1 -X POST -H "Authorization: token $GITHUB_TOKEN" \
-#          -H "Accept: application/vnd.github.v3+json" \
-#          "${PR_URL}/comments" \
-#          -d "{\"body\": \"$COMMENT\"}"
-#
-#          # PR 닫기
-#          curl --http1.1 -X PATCH -H "Authorization: token $GITHUB_TOKEN" \
-#          -H "Accept: application/vnd.github.v3+json" \
-#          "${PR_URL}" \
-#          -d "{\"state\": \"closed\"}"
-#
-
-
 name: PR 테스트
 
 on:
@@ -126,7 +78,7 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Gradle 캐시
+      - name: Gradle 캐시 # Gradle 캐시를 통해 빌드 속도를 줄임
         uses: actions/cache@v3
         with:
           path: |
@@ -141,7 +93,7 @@ jobs:
 
       - name: 빌드 및 테스트 실행
         id: build
-        continue-on-error: true
+        continue-on-error: true # 빌드가 실패해도 워크플로우 계속 진행
         run: |
           if ./gradlew build; then
             echo "BUILD_STATUS=success" >> $GITHUB_ENV
@@ -153,24 +105,24 @@ jobs:
         if: env.BUILD_STATUS == 'failure'
         uses: peter-evans/create-or-update-comment@v3
         with:
-          token: ${{ secrets.KJWSTUDY_2024 }}  # 개인 액세스 토큰 사용
+          token: ${{ secrets.MY_GITHUB_TOKEN }}  # 토큰 설정
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ⚠️ 빌드 또는 테스트가 실패했습니다. 코드를 확인해주세요.
+            ❗️빌드 또는 테스트가 실패했습니다. 코드를 확인해주세요.
 
       - name: PR 실패 시 종료
         if: env.BUILD_STATUS == 'failure'
         uses: peter-evans/close-pull@v3
         with:
-          token: ${{ secrets.KJWSTUDY_2024 }}  # 개인 액세스 토큰 사용
+          token: ${{ secrets.MY_GITHUB_TOKEN }}  # 토큰 설정
           pull-request-number: ${{ github.event.pull_request.number }}
-          comment: PR이 자동으로 종료되었습니다. 빌드/테스트 실패로 인해 종료됩니다.
+          comment:  빌드/테스트 실패로 PR이 종료되었습니다.
 
       - name: PR 성공 시 코멘트
         if: env.BUILD_STATUS == 'success'
         uses: peter-evans/create-or-update-comment@v3
         with:
-          token: ${{ secrets.KJWSTUDY_2024 }}  # 개인 액세스 토큰 사용
+          token: ${{ secrets.MY_GITHUB_TOKEN }}  # 비밀 변수로 변경
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            ✅ 빌드 및 테스트가 성공적으로 완료되었습니다!
+            ✅ 빌드 및 테스트가 성공적으로 완료되었습니다.
