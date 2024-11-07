@@ -88,6 +88,8 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
+          compression: gzip  # 캐시 압축 (gzip 사용)
+
       - name: Gradle 권한 설정
         run: chmod +x ./gradlew
 
